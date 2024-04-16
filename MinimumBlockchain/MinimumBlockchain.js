@@ -1,4 +1,3 @@
-//使用ChatGPT完成
 const crypto = require('crypto');
 
 class Block {
