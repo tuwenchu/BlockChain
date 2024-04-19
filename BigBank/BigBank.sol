@@ -20,12 +20,12 @@ contract Bank {
         _deposit(msg.value);
     }
 
-    function _deposit(uint256 depositAmoount) internal {
-        if (depositAmoount == 0) {
+    function _deposit(uint256 amoount) internal {
+        if (amoount == 0) {
             return;
         }
 
-        userDeposit[msg.sender] += depositAmoount;
+        userDeposit[msg.sender] += amoount;
 
         uint256 depositAmount = userDeposit[msg.sender];
 
