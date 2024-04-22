@@ -52,7 +52,7 @@ contract TokenBank {
         // base.transfer(msg.sender, amount);
         bytes memory methodData = abi.encodeWithSignature("transfer(address,uint256)",msg.sender,amount);
         (bool success, bytes memory res) = address(base).call(methodData);
-        require(success, "deposit failed");
+        require(success, "withdraw failed");
 
         emit Withdraw(msg.sender, amount, res);
     }
