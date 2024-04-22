@@ -18,7 +18,7 @@ contract TokenBank {
 
     event Deposit(address indexed from, uint256 amount);
 
-    event Withdraw(address indexed from, uint256 amount);
+    event Withdraw(address indexed from, uint256 amount, bytes res);
 
     constructor() {
         base = IBaseERC20(0xC3Ba5050Ec45990f76474163c5bA673c244aaECA);
@@ -32,7 +32,10 @@ contract TokenBank {
         require(amount > 0, "amount is 0");
         require(base.allowance(msg.sender, address(this)) >= amount, "allowance not enough");
 
-        base.transferFrom(msg.sender, address(this), amount);
+        // base.transferFrom(msg.sender, address(this), amount);
+        bytes memory methodData = abi.encodeWithSignature("transferFrom(address,address,uint256)",msg.sender,address(this),amount);
+        (bool success, ) = address(base).call(methodData);
+        require(success, "deposit failed");
 
         userDeposit[msg.sender] += amount;
 
@@ -46,8 +49,11 @@ contract TokenBank {
 
         userDeposit[msg.sender] = depositAmount - amount;
 
-        base.transfer(msg.sender, amount);
+        // base.transfer(msg.sender, amount);
+        bytes memory methodData = abi.encodeWithSignature("transfer(address,uint256)",msg.sender,amount);
+        (bool success, bytes memory res) = address(base).call(methodData);
+        require(success, "deposit failed");
 
-        emit Withdraw(msg.sender, amount);
+        emit Withdraw(msg.sender, amount, res);
     }
 }
