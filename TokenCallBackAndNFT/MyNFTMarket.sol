@@ -88,26 +88,15 @@ contract MyNFTMarket {
     }
 
     function buyNFT(address nftAddress, uint256 tokenId) external {
-        require(saleNfts[nftAddress][tokenId].onSale, "selled");
         uint256 price = saleNfts[nftAddress][tokenId].price;
         uint256 tokenBalance = SPACE.balanceOf(msg.sender);
         require(tokenBalance >= price, "balance error");
-
-        saleNfts[nftAddress][tokenId].onSale = false;
 
         address seller = saleNfts[nftAddress][tokenId].seller;
 
         require(SPACE.transferFrom(msg.sender, seller, price), "transfer error");
 
-        ERC721(nftAddress).transferFrom(address(this), msg.sender, tokenId);
-
-        emit BuyNFT(
-            msg.sender,
-            seller,
-            nftAddress,
-            tokenId,
-            price
-        );
+        _buyNFT(msg.sender, nftAddress, tokenId);
     }
 
     function tokensReceived(
@@ -117,7 +106,6 @@ contract MyNFTMarket {
         uint256 tokenId
     ) public {
         require(msg.sender == address(SPACE), "must called by token");
-        require(saleNfts[nftAddress][tokenId].onSale, "selled");
         uint256 price = saleNfts[nftAddress][tokenId].price;
         require(amount >= price, "amount not enough");
 
@@ -125,16 +113,22 @@ contract MyNFTMarket {
 
         require(SPACE.transfer(seller, price), "transfer error");
 
+        _buyNFT(buyer, nftAddress, tokenId);
+    }
+
+    function _buyNFT(address buyer, address nftAddress, uint256 tokenId) private {
+        require(saleNfts[nftAddress][tokenId].onSale, "selled");
+
         saleNfts[nftAddress][tokenId].onSale = false;
 
         ERC721(nftAddress).transferFrom(address(this), buyer, tokenId);
 
         emit BuyNFT(
             buyer,
-            seller,
+            saleNfts[nftAddress][tokenId].seller,
             nftAddress,
             tokenId,
-            price
+            saleNfts[nftAddress][tokenId].price
         );
     }
 
