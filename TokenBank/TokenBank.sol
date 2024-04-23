@@ -19,8 +19,7 @@ contract TokenBank {
 
     event Withdraw(address indexed from, address indexed token, uint256 amount);
 
-    constructor() {
-    }
+    constructor() {}
 
     function deposit(address token, uint256 amount) public {
         require(amount > 0, "amount is 0");
