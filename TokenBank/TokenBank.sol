@@ -15,9 +15,9 @@ contract TokenBank {
 
     mapping(address => mapping(address => uint256)) public userDeposit; //user --> token -->amount
 
-    event Deposit(address indexed from, uint256 amount);
+    event Deposit(address indexed from, address indexed token, uint256 amount);
 
-    event Withdraw(address indexed from, uint256 amount, bytes res);
+    event Withdraw(address indexed from, address indexed token, uint256 amount);
 
     constructor() {
     }
@@ -33,7 +33,7 @@ contract TokenBank {
 
         userDeposit[msg.sender][token] += amount;
 
-        emit Deposit(msg.sender, amount);
+        emit Deposit(msg.sender, token, amount);
     }
 
     function withdraw(address token, uint256 amount) public {
@@ -45,9 +45,9 @@ contract TokenBank {
 
         // IERC20(token).transfer(msg.sender, amount);
         bytes memory methodData = abi.encodeWithSignature("transfer(address,uint256)",msg.sender,amount);
-        (bool success, bytes memory res) = token.call(methodData);
+        (bool success, ) = token.call(methodData);
         require(success, "withdraw failed");
 
-        emit Withdraw(msg.sender, amount, res);
+        emit Withdraw(msg.sender, token, amount);
     }
 }
