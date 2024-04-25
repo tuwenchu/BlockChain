@@ -46,7 +46,7 @@ contract MyNFTMarket {
     constructor() {
         owner = msg.sender;
 
-        SPACE = ERC20(0x0F4119dE390BC916d0331B97a916B6b327831391);
+        SPACE = ERC20(0x6E111eaf89bbfC1210F413f63f0A35D34a75243f);
     }
 
     function updateSPACE(address token) external onlyOwner {
@@ -78,7 +78,10 @@ contract MyNFTMarket {
     }
 
     function cancel(address nftAddress, uint256 tokenId) external {
-        require(msg.sender == saleNfts[nftAddress][tokenId].seller, "not owner");
+        require(
+            msg.sender == saleNfts[nftAddress][tokenId].seller,
+            "not owner"
+        );
 
         saleNfts[nftAddress][tokenId].onSale = false;
 
@@ -94,7 +97,10 @@ contract MyNFTMarket {
 
         address seller = saleNfts[nftAddress][tokenId].seller;
 
-        require(SPACE.transferFrom(msg.sender, seller, price), "transfer error");
+        require(
+            SPACE.transferFrom(msg.sender, seller, price),
+            "transfer error"
+        );
 
         _buyNFT(msg.sender, nftAddress, tokenId);
     }
@@ -102,10 +108,15 @@ contract MyNFTMarket {
     function tokensReceived(
         address buyer,
         uint256 amount,
-        address nftAddress,
-        uint256 tokenId
-    ) public {
+        bytes memory data
+    ) public returns (bool) {
         require(msg.sender == address(SPACE), "must called by token");
+
+        (address nftAddress, uint256 tokenId) = abi.decode(
+            data,
+            (address, uint256)
+        );
+
         uint256 price = saleNfts[nftAddress][tokenId].price;
         require(amount >= price, "amount not enough");
 
@@ -114,9 +125,15 @@ contract MyNFTMarket {
         require(SPACE.transfer(seller, price), "transfer error");
 
         _buyNFT(buyer, nftAddress, tokenId);
+
+        return true;
     }
 
-    function _buyNFT(address buyer, address nftAddress, uint256 tokenId) private {
+    function _buyNFT(
+        address buyer,
+        address nftAddress,
+        uint256 tokenId
+    ) private {
         require(saleNfts[nftAddress][tokenId].onSale, "selled");
 
         saleNfts[nftAddress][tokenId].onSale = false;
