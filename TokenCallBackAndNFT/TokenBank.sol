@@ -6,14 +6,20 @@ interface IERC20 {
 
     function transfer(address to, uint256 value) external returns (bool);
 
-    function allowance(address owner, address spender) external view returns (uint256);
+    function allowance(address owner, address spender)
+        external
+        view
+        returns (uint256);
 
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    ) external returns (bool);
 }
 
 contract TokenBank {
-
-    address public spaceToken = 0x0F4119dE390BC916d0331B97a916B6b327831391;
+    address public spaceToken = 0x6E111eaf89bbfC1210F413f63f0A35D34a75243f;
 
     mapping(address => mapping(address => uint256)) public userDeposit; //user --> token -->amount
 
@@ -25,10 +31,18 @@ contract TokenBank {
 
     function deposit(address token, uint256 amount) public {
         require(amount > 0, "amount is 0");
-        require(IERC20(token).allowance(msg.sender, address(this)) >= amount, "allowance not enough");
+        require(
+            IERC20(token).allowance(msg.sender, address(this)) >= amount,
+            "allowance not enough"
+        );
 
         // IERC20(token).transferFrom(msg.sender, address(this), amount);
-        bytes memory methodData = abi.encodeWithSignature("transferFrom(address,address,uint256)",msg.sender,address(this),amount);
+        bytes memory methodData = abi.encodeWithSignature(
+            "transferFrom(address,address,uint256)",
+            msg.sender,
+            address(this),
+            amount
+        );
         (bool success, ) = token.call(methodData);
         require(success, "deposit failed");
 
@@ -36,14 +50,20 @@ contract TokenBank {
 
         emit Deposit(msg.sender, token, amount);
     }
-    
-    function tokensReceived(address user, uint256 amount) public {
+
+    function tokensReceived(
+        address user,
+        uint256 amount,
+        bytes memory data
+    ) public returns (bool) {
         require(amount > 0, "amount is 0");
         require(msg.sender == spaceToken, "must called by token");
 
         userDeposit[user][spaceToken] += amount;
 
         emit Deposit(user, spaceToken, amount);
+
+        return true;
     }
 
     function withdraw(address token, uint256 amount) public {
@@ -54,7 +74,11 @@ contract TokenBank {
         userDeposit[msg.sender][token] = depositAmount - amount;
 
         // IERC20(token).transfer(msg.sender, amount);
-        bytes memory methodData = abi.encodeWithSignature("transfer(address,uint256)",msg.sender,amount);
+        bytes memory methodData = abi.encodeWithSignature(
+            "transfer(address,uint256)",
+            msg.sender,
+            amount
+        );
         (bool success, ) = token.call(methodData);
         require(success, "withdraw failed");
 
