@@ -27,6 +27,7 @@ contract MyNFTMarketTest is Test {
         vm.startPrank(tom);
 
         nft.mint(tom, "www.baidu.com");
+        
         nft.setApprovalForAll(address(market), true);
 
         market.list(address(nft), 1, 100);
@@ -51,10 +52,15 @@ contract MyNFTMarketTest is Test {
 
         token.approve(address(market), 1000000000);
 
+        uint256 preBalance = token.balanceOf(tom);
+
+        uint256 price = market.getPrice(address(nft),1);
+
         market.buyNFT(address(nft), 1);
 
         vm.stopPrank();
 
         assertEq(nft.ownerOf(1), bob,"fail buy");
+        assertEq(token.balanceOf(tom), preBalance + price,"fail buy");
     }
 }
