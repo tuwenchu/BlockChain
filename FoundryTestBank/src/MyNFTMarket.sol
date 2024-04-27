@@ -152,4 +152,8 @@ contract MyNFTMarket {
     function _getTs() internal view returns (uint64) {
         return uint64(block.timestamp);
     }
+
+    function getPrice(address nftAddress, uint256 tokenId) public view returns (uint256) {
+        return saleNfts[nftAddress][tokenId].price;
+    }
 }
