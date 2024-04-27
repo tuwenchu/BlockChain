@@ -1,66 +1,119 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity  0.8.20;
+import "forge-std/Test.sol";
+import { NFTMarket } from "../src/Market.sol";
+import { ERC721Mock } from './mock/ERC721mocklist.sol';
+ import { BaseERC20 } from '../src/BaseERC20.sol';
 
-import {Test, console} from "forge-std/Test.sol";
-import {MyNFTMarket} from "../src/MyNFTMarket.sol";
-import {SpaceNFT} from "../src/SpaceNFT.sol";
-import {SpaceToken} from "../src/SpaceToken.sol";
+ import { TokenBank } from '../src/TokenBank.sol' ;
+error ERC721InsufficientApproval(address spender,address tokenId) ;
+contract NFTMarketTest is Test {
+    
+    NFTMarket  mkt;
 
-contract MyNFTMarketTest is Test {
-    MyNFTMarket public market;
-    SpaceNFT public nft;
-    SpaceToken public token;
+    ERC721Mock nft; // mint
 
-    address tom = makeAddr("tom");
+    address alice = makeAddr('alice'); // 地址打印方便
 
+    BaseERC20 ercToken ;
+
+    TokenBank  TBK;
+    //  error ERC721InsufficientApproval(address spender,address tokenId) ;
+ // 初始化要有nft
     function setUp() public {
-        vm.startPrank(tom);
 
-        market = new MyNFTMarket();
-        nft = new SpaceNFT();
-        token = new SpaceToken();
+        //   vm.startPrank(alice) ;
 
-        vm.stopPrank();
-    }
+          nft = new ERC721Mock('sl','sl');
 
+          ercToken = new BaseERC20(); // 代币
+
+          mkt = new NFTMarket(address(ercToken) , address(nft) );
+
+          TBK = new TokenBank();
+
+    } 
+    // 1.没有授权转账失败的案例
     function test_list() public {
-        vm.startPrank(tom);
 
-        nft.mint(tom, "www.baidu.com");
+      nft.mint(alice,1);
+
+      vm.startPrank(alice);
+
+    //  vm.expectRevert(ERC721InsufficientApproval.selector);
+    //   console.log('--------->',ERC721InsufficientApproval.selector);
+      nft.setApprovalForAll(address(mkt),true); // alice去给合约授权
+      
+      mkt.list(1,10);                           // alice去操作上架
+
+      assertEq( mkt.tokenSeller(1) , alice,'alice----------tokenSeller');
+      assertEq( mkt.tokenIdPrice(1) , 10,'alice----------tokenIdPrice');
+
+
+    } 
+    function test_buy() public {
+
+     test_list();
+ 
+     address bom = makeAddr('bom');
+     
+     ercToken.mint(bom,100000); // 给bom给了token
+
+     vm.startPrank(bom);       
+
+     ercToken.approve(address(mkt),10000);  // bom给合约授权1000额度的token
+
+    // uint256 preBalance = ercToken.balanceOf(bom);
+
+
+     mkt.buy(1,12);                          // bom去买了id为1的nft 付钱12
+     
+     assertEq(nft.ownerOf(1) ,bom ,'bom--------------->');
+
+    //  ercToken.balanceOf(alice);
+    
+    } 
+
+    function test_deposit() public{
         
-        nft.setApprovalForAll(address(market), true);
+        address testTK = makeAddr('testTK');
 
-        market.list(address(nft), 1, 100);
+        ercToken.mint(address(testTK),1000); // 给bom给了token
 
-        vm.stopPrank();
+        uint256 balances =  ercToken.balanceOf(testTK);
+         
+        vm.startPrank(testTK);  
 
-        assertEq(nft.ownerOf(1), address(market),"fail list");
+        ercToken.approve(address(TBK),1000);
+
+        TBK.deposit(address(ercToken), 100);
+        
+        assertEq(ercToken.balanceOf(testTK) , balances - 100,'testTK--------------->');
+      
     }
 
-    function test_buy(uint256 x) public {
-        test_list();
 
-        address bob = makeAddr("bob");
+    function test_withdraw() public{
 
-        vm.startPrank(tom);
+        address testTK = makeAddr('testTK');
 
-        token.transfer(bob, 1000000000);
+        ercToken.mint(address(testTK),1000); // 给bom给了token
+         
+        vm.startPrank(testTK);  
 
-        market.updateSPACE(address(token));
+        ercToken.approve(address(TBK),1000);
 
-        vm.startPrank(bob);
+        TBK.deposit(address(ercToken), 100);
 
-        token.approve(address(market), 1000000000);
+        uint256 bal =  ercToken.balanceOf(testTK);
 
-        uint256 preBalance = token.balanceOf(tom);
-
-        uint256 price = market.getPrice(address(nft),1);
-
-        market.buyNFT(address(nft), 1);
-
-        vm.stopPrank();
-
-        assertEq(nft.ownerOf(1), bob,"fail buy");
-        assertEq(token.balanceOf(tom), preBalance + price,"fail buy");
+        uint256 amount = 10;
+        
+        TBK.withdraw(address(ercToken),amount);
+   
+        assertEq(ercToken.balanceOf(testTK) , bal + amount ,'testTK--------------->');
+    
     }
+
 }
+
